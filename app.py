@@ -1,11 +1,13 @@
 from flask import Flask, render_template, request, session
 import random
+import os
 
 app = Flask(__name__)
-app.secret_key = "supersecretkey"  # required for sessions
+app.secret_key = "supersecretkey"  # change this later for security
 
 @app.route("/", methods=["GET", "POST"])
 def home():
+    # Initialize game
     if "number" not in session:
         session["number"] = random.randint(1, 100)
         session["attempts"] = 0
@@ -15,31 +17,33 @@ def home():
     message_class = ""
 
     if request.method == "POST":
-        guess = request.form.get("guess")
+        guess_input = request.form.get("guess")
 
-        if not guess:
+        if not guess_input:
             message = "Please enter a number."
             message_class = "error"
         else:
             try:
-                guess = int(guess)
+                guess = int(guess_input)
                 session["attempts"] += 1
                 attempts = session["attempts"]
 
                 if guess == session["number"]:
-                    message = f"🎉 Correct! You guessed it in {attempts} attempts."
+                    message = f"🎉 You successfully guessed the number in {attempts} turns!"
                     message_class = "success"
                     session.pop("number")
                     session.pop("attempts")
+
                 elif guess > session["number"]:
-                    message = "Too high! Try a smaller number."
+                    message = "The selected number is smaller"
                     message_class = "hint"
+
                 else:
-                    message = "Too low! Try a bigger number."
+                    message = "The selected number is greater"
                     message_class = "hint"
 
             except ValueError:
-                message = "Enter a valid number."
+                message = "Enter a valid number!"
                 message_class = "error"
 
     return render_template(
@@ -49,5 +53,7 @@ def home():
         message_class=message_class
     )
 
+# ✅ Required for Render deployment
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
